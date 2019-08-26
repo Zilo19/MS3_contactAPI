@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <http:listener-config name="userInfo-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration" />
+    <apikit:config name="userInfo-config" raml="userInfo.raml" consoleEnabled="false" doc:name="Router" />
+    <http:listener-config name="HTTP_Listener_Configuration1" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="userInfo-main">
+        <http:listener config-ref="userInfo-httpListenerConfig" path="/api/*" doc:name="HTTP" />
+        <apikit:router config-ref="userInfo-config" doc:name="APIkit Router" />
+        <exception-strategy ref="userInfo-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="userInfo-console">
+        <http:listener config-ref="userInfo-httpListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="userInfo-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="get:/user:userInfo-config">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/getUser" doc:name="HTTP" />
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from useridentification]]></db:parameterized-query>
+        </db:select>
+        <json:object-to-json-transformer doc:name="Object to JSON" />
+    </flow>
+    <flow name="post:/user:userInfo-config">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/userInsert" doc:name="HTTP" />
+        <json:json-to-object-transformer doc:name="JSON to Object" returnClass="java.util.HashMap[]" />
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[insert into useridentification (first_name, last_name, DOB, gender, title) values ( #[payload[0].first_name],#[payload[0].last_name], #[payload[0].DOB], #[payload[0].gender], #[payload[0].title])]]></db:parameterized-query>
+        </db:insert>
+        <set-payload value="User Information Submitted !" doc:name="Set Payload" />
+        <set-property propertyName="Content Type" value="application/json" doc:name="Property" />
+    </flow>
+    <flow name="delete:/user:userInfo-config">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/UserInfo" doc:name="HTTP"/>
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query/>
+        </db:delete>
+        <set-payload value="User deleted" doc:name="Set Payload" />
+    </flow>
+    <flow name="put:/user:userInfo-config">
+        <http:listener config-ref="HTTP_Listener_Configuration1" path="/UpdateUser" doc:name="HTTP"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query/>
+        </db:update>
+        <set-payload value="user Updated" doc:name="Set Payload"/>
+    </flow>
+    <apikit:mapping-exception-strategy name="userInfo-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload" />
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>

@@ -1,0 +1,68 @@
+#%RAML 1.0
+title: Sample API
+/user:
+  get:
+    queryParameters:
+      /{id}:        
+    description: "getting user using user_id"
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+                {
+                  "data": {
+                    "id": "1",
+                    "firsname": "John",
+                    "lastname": null,
+                    "dob": 1341533193,
+                    "gender": "M",
+                    "title": "Programmer",
+                    
+                  },
+                  "success": true,
+                  "status": 200
+                }
+  post: 
+    responses:                
+      201:
+        body:
+          application/json:
+            example: |
+                {
+                    "data": {
+                    "id": "1",
+                    "firsname": "Peter",
+                    "lastname": John,
+                    "dob": 134193,
+                    "gender": "F",
+                    "title": "Developer",
+                    
+                  },
+                  "success": true,
+                  "status": 200
+                }      
+  delete:
+    responses: 
+      200:
+        body: 
+          application/json: 
+            examples:
+              {
+              "msg": "User deleted"
+              }           
+      401:
+        description: "Unauthorized User"
+  put:
+    queryParameters: 
+      Id: 
+    displayName: User Updated
+    description: Id
+    responses:
+      200:
+        body:
+          application/json:
+            examples: 
+              {
+              "msg": "user Updated"
+              }

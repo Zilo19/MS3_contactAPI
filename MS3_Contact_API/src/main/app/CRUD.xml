@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8082" doc:name="HTTP Listener Configuration"/>
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" database="userinformation" doc:name="MySQL Configuration"/>
+    <flow name="GetUsers">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/getUserInfo" doc:name="HTTP"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from useridentification]]></db:parameterized-query>
+        </db:select>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <set-property propertyName="Content Type" value="application/json" doc:name="Property"/>
+    </flow>
+    <flow name="FindUser">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/userSearch" doc:name="HTTP"/>
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[select * from useridentification where user_id =#[message.inboundProperties.'http.listener.path'.user_id]]]></db:parameterized-query>
+        </db:select>
+        <object-to-string-transformer doc:name="Object to String"/>
+    </flow>
+    <flow name="InsertUser">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/insertUser" doc:name="HTTP" allowedMethods="POST"/>
+       <json:json-to-object-transformer doc:name="JSON to Object" returnClass="java.util.HashMap[]"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[insert into useridentification (first_name, last_name, DOB, gender, title) values ( #[payload[0].first_name],#[payload[0].last_name], #[payload[0].DOB], #[payload[0].gender], #[payload[0].title])]]></db:parameterized-query>
+        </db:update>
+        <set-payload value="User Information Submitted !" doc:name="Set Payload"/>
+        <set-property propertyName="Content Type" value="application/json" doc:name="Property"/>
+    </flow>
+    <flow name="DeleteUser">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/userDelete" allowedMethods="DELETE" doc:name="HTTP"/>
+        <db:delete config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[Delete from useridentification where user_id =#[message.inboundProperties.'http.listener.path'.user_id]]]></db:parameterized-query>
+        </db:delete>
+        <set-payload value="User Deleted !" doc:name="Set Payload"/>
+    </flow>
+    <flow name="UpdateUser">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/userUpdate" doc:name="HTTP"/>
+        <db:update config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[update useridentification set first_name = #[payload.first_name], last_name = #[payload.last_name], DOB = #[payload.DOB], gender = #[payload.gender], title = #[payload.title] where user_id = #[payload.user_id]]]></db:parameterized-query>
+        </db:update>
+        <set-payload value="User Inforamation Updated !" doc:name="Set Payload"/>
+    </flow>
+</mule>
